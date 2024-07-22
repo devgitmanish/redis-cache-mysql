@@ -29,13 +29,16 @@ public class UserService {
                         new RuntimeException("User not found with id: " + id));
     }
 
-    @Cacheable(value ="allUsers")
+    @Cacheable(value = "users", key = "'allUsers'")
     public List<User> getAllUsers(){
         System.out.println("fetch all users data");
         return userRespository.findAll();
     }
 
-    @CachePut(value = "users", key = "#user.id")
+    @Caching(
+            put = @CachePut(value = "users", key = "#result.id"),
+            evict = @CacheEvict(value = "users", key = "'allUsers'")
+    )
     public User updateUser(User user, Long id){
         return userRespository.findById(id)
                 .map(existingUser ->{
@@ -45,15 +48,15 @@ public class UserService {
                 })
                 .orElseThrow(()-> new RuntimeException("user not found with id: {}"+ id));
     }
-
+    @Caching(
+            put = @CachePut(value = "users", key = "#result.id"),
+            evict = @CacheEvict(value = "users", key = "'allUsers'")
+    )
     public User saveUser(User user){
         return userRespository.save(user);
     }
 
-    @Caching(evict = {
-            @CacheEvict(value = "users", key = "#id"),
-            @CacheEvict(value = "allUsers", allEntries = true, key = "#id")
-    })
+    @CacheEvict(value = "users", allEntries = true)
     public void deleteUser(Long id){
         System.out.println("user removed by id : "+ id);
         userRespository.deleteById(id);
